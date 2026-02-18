@@ -1,16 +1,60 @@
 {
-  "name": "lifehub-ai",
-  "version": "1.0.0",
-  "description": "LifeHub AI - Personal Life Operating System",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2"
-  }
+    "name": "lifehub-ai",
+    "version": "1.0.0",
+    "description": "LifeHub AI - Personal Life Operating System",
+    "main": "electron.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js",
+        "electron": "electron .",
+        "build": "electron-builder --win",
+        "pack": "electron-builder --win --dir"
+    },
+    "dependencies": {
+        "@supabase/supabase-js": "^2.49.1",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2"
+    },
+    "devDependencies": {
+        "electron": "^33.3.1",
+        "electron-builder": "^25.1.8"
+    },
+    "build": {
+        "appId": "com.lifehub.ai",
+        "productName": "LifeHub AI",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!dist/**",
+            "!.git/**",
+            "!.env"
+        ],
+        "extraResources": [
+            {
+                "from": ".env",
+                "to": ".env"
+            }
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": true,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "LifeHub AI"
+        }
+    }
 }
