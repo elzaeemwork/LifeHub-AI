@@ -1,4 +1,8 @@
 // ===== Main App Controller =====
+const SUPABASE_URL = 'https://kbmsfvvosjqjdfmiwxpr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibXNmdnZvc2pxamRmbWl3eHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NDQ1MzQsImV4cCI6MjA4NzAyMDUzNH0.q6gDOdD5SIBZVrihAkZ7dN-J2YBl_bHsMxkhjziAq4Y';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const App = {
     currentPage: 'dashboard',
     session: null,
@@ -13,6 +17,9 @@ const App = {
     },
 
     init() {
+        // Check for OAuth callback (hash fragment from Google redirect)
+        this.handleOAuthCallback();
+
         // Check saved session
         const saved = localStorage.getItem('lifehub_session');
         if (saved) {
@@ -25,6 +32,38 @@ const App = {
         this.setupAuthListeners();
         this.setupNavListeners();
         this.updateDate();
+    },
+
+    async handleOAuthCallback() {
+        // Supabase redirects back with #access_token=... in the URL hash
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+            try {
+                const { data, error } = await supabaseClient.auth.getSession();
+                if (error) throw error;
+                if (data.session) {
+                    this.session = data.session;
+                    API.setToken(data.session.access_token);
+                    localStorage.setItem('lifehub_session', JSON.stringify(data.session));
+                    // Clean the URL hash
+                    history.replaceState(null, '', window.location.pathname);
+                    this.showApp();
+                }
+            } catch (err) { console.error('OAuth callback error:', err); }
+        }
+    },
+
+    async signInWithGoogle() {
+        try {
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin }
+            });
+            if (error) throw error;
+            // Browser will redirect to Google
+        } catch (err) {
+            App.showToast(err.message || 'خطأ في تسجيل الدخول بحساب Google', 'error');
+        }
     },
 
     setupAuthListeners() {
@@ -81,13 +120,18 @@ const App = {
         });
 
         // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn').addEventListener('click', async () => {
             localStorage.removeItem('lifehub_session');
             this.session = null;
             API.setToken(null);
+            await supabaseClient.auth.signOut();
             document.getElementById('auth-screen').style.display = 'flex';
             document.getElementById('app').style.display = 'none';
         });
+
+        // Google OAuth buttons
+        document.getElementById('google-login-btn').addEventListener('click', () => this.signInWithGoogle());
+        document.getElementById('google-signup-btn').addEventListener('click', () => this.signInWithGoogle());
     },
 
     setupNavListeners() {
